@@ -1,5 +1,6 @@
 # Coup
-game / ボードゲーム
+game / ボードゲーム  
+![タイトル画面](example.png)  
 
 ## TODO
 ・ゲーム部分  
