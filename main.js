@@ -1,57 +1,57 @@
 (function(){
-    var w = 800, h = 600;
-    var phase;
-    var turn;
-    var cturn = [];
-    var bturn = [];
-    var str_act = [];
-    var str_c = [];
-    var str_b = [];
-    var tp_act;
-    var tp_tar;
-    var target_card;
-    var player_turn;
-    var player;
-    var player_name = [];
-    var player_cost = [];
-    var player_hand1 = [];
-    var player_hand2 = [];
-    var player_lost1 = [];
-    var player_lost2 = [];
-    var playerAI = [];
-    var deck = [];
-    var card_name = ["公爵","刺客","女伯","大使","船長"];
-    var act_name = ["収入","援助","徴税","クー","暗殺","交換","強奪"];
-    var act_choose;
-    var select_discard;
-    var on_mouse;
-    var ds = [[],
-    		  [3],
-    		  [2,4],
-    		  [1,3,5],
-    		  [0,2,4,6],
-    		  [0,2,3,4,6]];
+	var w = 800, h = 600;
+	var phase;
+	var turn;
+	var next_check_turn;
+	var cturn = [];
+	var bturn = [];
+	var str_act = [];
+	var tp_act;
+	var tp_tar;
+	var target_card;
+	var player_turn;
+	var player;
+	var player_name = [];
+	var player_cost = [];
+	var player_hand1 = [];
+	var player_hand2 = [];
+	var player_lost1 = [];
+	var player_lost2 = [];
+	var playerAI = [];
+	var deck = [];
+	var card_name = ["公爵","刺客","女伯","大使","船長"];
+	var act_name = ["収入","援助","徴税","クー","暗殺","交換","強奪"];
+	var act_choose;
+	var select_discard;
+	var on_mouse;
+	var ds = [[],
+			  [3],
+			  [2,4],
+			  [1,3,5],
+			  [0,2,4,6],
+			  [0,2,3,4,6]];
 
-    var char = new Image();
+	var char = new Image();
 
-    var title_c;
-    var wait = [];
-    var pwait = [];
-    var ppos = [];
-    var pstr =[];
+	var title_c;
+	var wait = [];
+	var pwait = [];
+	var ppos = [];
+	var pstr =[];
 
-    var requestId;
-    var canvas = document.getElementById('canvas');
-    canvas.addEventListener("click", onClick, false);
-    canvas.addEventListener('mousemove', onMove, false);
-    var ctx = canvas.getContext('2d');
-	
-    init();
+	var requestId;
+	var canvas = document.getElementById('canvas');
+	canvas.addEventListener("click", onClick, false);
+	canvas.addEventListener('mousemove', onMove, false);
+	var ctx = canvas.getContext('2d');
+
+	init();
 	requestId = window.requestAnimationFrame(renderTitle); 
 
 	function init(){
 		tc();
 		turn = 0;
+		next_check_turn = -1;
 		player_turn = 0;
 		phase = 0;
 		player = 3;
@@ -69,6 +69,9 @@
 	function reset(){
 		turn = 0;
 		act_choose　= -1;
+		for(var i = 0; i<100; i++){
+			pwait[i] = 0;
+		}
 	}
 
 	function tc(){
@@ -106,8 +109,6 @@
 		cturn.length = 0;
 		bturn.length = 0;
 		str_act.length = 0;
-		str_c.length = 0;
-		str_b.length = 0;
 		player_name.length = 0;
 		player_cost.length = 0;
 		player_hand1.length = 0;
@@ -118,8 +119,6 @@
 			cturn[i] = false;
 			bturn[i] = false;
 			str_act[i] = "";
-			str_c[i] = "";
-			str_b[i] = "";
 			player_name[i] = "player"+i;
 			player_cost[i] = 2;
 			player_hand1[i] = deck[i*2];
@@ -545,6 +544,26 @@
 		//ポップアップメッセージの表示
 		modWait();
 
+		if(next_check_turn==player_turn || true){
+			if(cturn[player_turn]){
+				ctx.fillStyle = '#522';
+				if(next_check_turn==player_turn)ctx.fillStyle = '#a55';
+				ctx.fillRect(20,400,160,30);
+				ctx.fillRect(20,440,160,30);
+				ctx.fillStyle = '#fff';
+				ctx.fillText("doubt",30,420);
+				ctx.fillText("pass",30,460);
+			}else if(bturn[player_turn] || true){
+				ctx.fillStyle = '#552';
+				if(next_check_turn==player_turn)ctx.fillStyle = '#aa5';
+				ctx.fillRect(20,400,160,30);
+				ctx.fillRect(20,440,160,30);
+				ctx.fillStyle = '#fff';
+				ctx.fillText("block",30,420);
+				ctx.fillText("pass",30,460);
+			}
+		}
+
 		//on_mouse
 		ctx.fillStyle = '#00f';
 		ctx.globalAlpha = 0.3;
@@ -581,7 +600,11 @@
 		ctx.globalAlpha = 1.0;
 
 		//フレーム毎の処理
-		calcTurn();
+		if(turn==player_turn){
+			calcTurn();
+		}else{
+			calcTurn();
+		}
 		
 		//デバッグ表示
 		if(true){
@@ -596,22 +619,50 @@
 			ctx.fillText("act "+act_choose,10,60);
 			ctx.strokeText("pwait[0] "+pwait[0],10,80,510);
 			ctx.fillText("pwait[0] "+pwait[0],10,80);
+			ctx.strokeText("next_check_turn "+next_check_turn,10,100,510);
+			ctx.fillText("next_check_turn "+next_check_turn,10,100);
+			ctx.font= 'bold 10px Meiryo';
+			for(var i = 0; i < 4; i++){
+				if(cturn[i]){
+					ctx.fillText("cturn: O",10,110+i*10);
+				}else{
+					ctx.fillText("cturn: X",10,110+i*10);
+				}
+			}
+			for(var i = 0; i < 4; i++){
+				if(bturn[i]){
+					ctx.fillText("bturn: O",10,150+i*10);
+				}else{
+					ctx.fillText("bturn: X",10,150+i*10);
+				}
+			}
 		}
+
 
 		requestId = window.requestAnimationFrame(renderPlay);
 	}
 
+	function nextCheck(p){
+		next_check_turn = p;
+		next_check_turn++;
+		next_check_turn %= (player+1);
+	}
+
+	function nextTurn(){
+		turn++;
+		if(turn>player)turn=0;
+		act_choose　= -1;
+		phase = 2;
+	}
+
 	function calcTurn(){
-		//turn!=player_turnのとき
-		//一定時間経過後にplayAction()を実行し処理を進める
-		//if(turn!=player_turn){
-		wait[99]+=50;
+		wait[99]+=3;
 		if(wait[99]>100){
 			wait[99] = 0;
 			if(phase==2 && turn!=player_turn){
 				if(!player_lost1[turn] || !player_lost2[turn]){
 					var a = playAI(turn,0);
-					console.log("turn"+turn+" act"+a.act+" tar"+a.target);
+					console.log("start:[ "+act_name[a.act]+" ] player: "+turn+" -> target: "+a.target);
 					tp_act = a.act;
 					tp_tar = a.target;
 					playAction(tp_act,turn,tp_tar);
@@ -621,66 +672,95 @@
 					if(turn>player)turn=0;	
 				}
 			}else if(phase==3 || phase==5){
-				var v = true;
-				//ダウトチェック
-				for(var i in cturn){
-					if(!v)break;
-					var j = (parseInt(i) + parseInt(turn))%(player+1);
-					if(cturn[j]){
-						if(!player_lost1[j] || !player_lost2[j]){
-							if(j==player_turn)break;
-							if(playAI(j,1)){
-								for(var l in cturn){
-									cturn[l] = false;
-									bturn[l] = false;
-								}
-								cplayer = j;
-								var tar = turn;
-								if(phase==5)
-									tar = bplayer;
-								if(doubtCheck(tar)){
-									discard(tar);
-								}else{
-									discard(cplayer);
-								}
-								phase = 4;
-							}
-						}else{
-							wait[99] = 100;
-						}
-						cturn[j] = false;
-						v = false;
-					}
+				if(next_check_turn == -1){
+					calcAction(tp_act,turn,tp_tar);
+					return;
 				}
-				//全員ダウトパス && ブロック済み
-				if(!v && phase==5){
+				
+				if((cturn[player_turn] || bturn[player_turn]) && next_check_turn==player_turn && player_turn!=turn){
+					//console.log("wait ");
+					//全チェック済みで自分のチェック番に戻ってきた　ならスルーしてアクション実行
+					//自分のチェック番 かつ　自分のターンでない ならreturnしてクリックまで待つ
+					return;
+				}
+				var j = next_check_turn;
+				nextCheck(next_check_turn);
+
+				//ダウトチェック
+				if(cturn[j]){
+					console.log("doubt now "+j);
+					if(!player_lost1[j] || !player_lost2[j]){
+						if(playAI(j,1)){
+							for(var l in cturn){
+								cturn[l] = false;
+								bturn[l] = false;
+							}
+							cplayer = j;
+							var tar = turn;
+							if(phase==5)
+								tar = bplayer;
+							if(doubtCheck(tar)){
+								discard(tar);
+								nextTurn();
+								phase = 2;
+							}else{
+								discard(cplayer);
+								phase = 3;
+							}
+							//phase = 4;
+						}
+					}else{
+						wait[99] = 100;
+					}
+					cturn[j] = false;
+					return;
+				}
+				//全員ダウトパス && ブロック判定
+				if(phase==5){
 
 				}
 				//ブロックチェック
-				for(var i in bturn){
-					if(!v)break;
-					var j = (parseInt(i) + parseInt(turn))%(player+1);
-					if(bturn[j]){
-						if(!player_lost1[j] || !player_lost2[j]){
-							if(j==player_turn)break;
-							if(playAI(j,2)){
-								for(var l in bturn){
-									cturn[l] = true;
-									bturn[l] = false;
-								}
-								cturn[j] = false;
-								bplayer = j;
-								phase = 5;
-							}
-						}else{
-							wait[99] = 100;
-						}
-						bturn[j] = false;
-						v = false;
+				for(var i = 0; i < player+1; i++){
+					var k = (i+turn)%(player+1);
+					if(bturn[k]){
+						j = k;
+						next_check_turn = k;
+						break;
 					}
 				}
-				if(v)calcAction(tp_act,turn,tp_tar);
+				if((cturn[player_turn] || bturn[player_turn]) && next_check_turn==player_turn && player_turn!=turn){
+					//全チェック済みで自分のチェック番に戻ってきた　ならスルーしてアクション実行
+					//自分のチェック番 かつ　自分のターンでない ならreturnしてクリックまで待つ
+					return;
+				}
+				if(bturn[j]){
+					console.log("block now "+j);
+					if(!player_lost1[j] || !player_lost2[j]){
+						if(playAI(j,2)){
+							for(var l in bturn){
+								cturn[l] = true;
+								bturn[l] = false;
+							}
+							cturn[j] = false;
+							bplayer = j;
+							phase = 5;
+						}
+					}else{
+						wait[99] = 100;
+					}
+					bturn[j] = false;
+					return;
+				}
+				
+				//全員パス済み
+				next_check_turn = -1;
+				if(phase==3){
+					calcAction(tp_act,turn,tp_tar);
+				}
 			}else if(phase==4){
+				//doubt処理済み
+				next_check_turn = -1;
+				calcAction(tp_act,turn,tp_tar);
 				phase = 2;
 			}
 		}
@@ -689,21 +769,28 @@
 	function modWait(){
 		for(var i = 0; i<100; i++){
 			if(pwait[i]>0){
-				pwait[i]+=2;
+				pwait[i]+=1;
 				drawPop(ppos[i],pstr[i],pwait[i],i);
 			}
 			if(pwait[i]>200)pwait[i]=0;
 		}
 	}
 
-	function drawInfo(pos,n){
-		ctx.font= 'bold 20px Meiryo';
-		ctx.strokeStyle = '#333';
-		ctx.lineWidth = 6;
-		ctx.lineJoin = 'round';
-		ctx.fillStyle = '#fff';
-		var t = [card_name[player_hand1[n]],card_name[player_hand2[n]]];
-		var x = 0,　y = 0;
+	function addPopMes(mes,p){
+		var pl = ds[player][p-1];
+		if(p==7)pl=7;
+		for(var i in pwait){
+			if(pwait[i]==0){
+				pwait[i]++;
+				ppos[i]=pl;
+				pstr[i]=mes;
+				break;
+			}
+		}
+	}
+
+	function drawPos(pos){
+		var x = 0, y = 0;
 		if(pos==0){//r lower
 			x = 30;	y = 300;
 		}else if(pos==1){//r center
@@ -718,7 +805,21 @@
 			x = 460; y = 220;
 		}else if(pos==6){//l lower
 			x = 460; y = 300;
+		}else if(pos==7){//self
+			x = 245; y = 400;
 		}
+		return {x:x,y:y};
+	}
+
+	function drawInfo(pos,n){
+		ctx.font= 'bold 20px Meiryo';
+		ctx.strokeStyle = '#333';
+		ctx.lineWidth = 6;
+		ctx.lineJoin = 'round';
+		ctx.fillStyle = '#fff';
+		var t = [card_name[player_hand1[n]],card_name[player_hand2[n]]];
+		var p = drawPos(pos);
+		var x = p.x,　y = p.y;
 		if(player_lost1[n]){
 			ctx.strokeText(t[0],x,y,510);
 			ctx.fillText(t[0],x,y);
@@ -741,22 +842,9 @@
 		ctx.lineWidth = 6;
 		ctx.lineJoin = 'round';
 		ctx.fillStyle = '#fff';
-		var x = 0,　y = 0;
-		if(pos==0){//r lower
-			x = 30;	y = 300;
-		}else if(pos==1){//r center
-			x = 30;	y = 220;
-		}else if(pos==2){//r upper
-			x = 30;	y = 130;
-		}else if(pos==3){//center
-			x = 245; y = 55;
-		}else if(pos==4){//l upper
-			x = 460; y = 130;
-		}else if(pos==5){//l center
-			x = 460; y = 220;
-		}else if(pos==6){//l lower
-			x = 460; y = 300;
-		}
+		//if(sec<20)console.log(pos);
+		var p = drawPos(pos);
+		var x = p.x,　y = p.y;
 		x += i*2;
 		y += -50;
 		if(sec>100)sec = 100;
@@ -785,23 +873,28 @@
 	}
 
 	function playAction(n,p,t){
+		var c = false;
 		if(n==2 || n==4 || n==5 || n==6){
+			c = true;
 			for(var i in cturn)
 				cturn[i]=true;
 			cturn[p] = false;
 		}
 		if(n==1){
+			c = true;
 			for(var i in bturn)
 				bturn[i]=true;
 			bturn[p] = false;
 		}else if(n==4 || n==6){
+			c = true;
 			bturn[t]=true;
 		}
+		if(c)nextCheck(p);
 		phase = 3;
 	}
 
 	function calcAction(n,p,t){
-		console.log("calc: [ "+n+" ] "+p+" -> "+t);
+		console.log("action:[ "+act_name[n]+" ] player: "+p+" -> target: "+t);
 		if(n==0){
 			//収入
 			player_cost[p]++;
@@ -838,8 +931,86 @@
 		phase = 2;
 	}
 
-	function doubtCheck(num){
+	function handCheck(n,c){
+		var v = false;
+		if(!player_lost1[n] && player_hand1[n]==c)
+			v = true;
+		if(!player_lost2[n] && player_hand2[n]==c)
+			v = true;
+		return v;
+	}
 
+	function handCnt(p){
+		var cnt = 0;
+		if(!player_lost1[p])cnt++;
+		if(!player_lost2[p])cnt++;
+		return cnt;
+	}
+
+	function doubtCheck(n){
+		var v = true;
+		if(phase==3){
+			if(tp_act==2){
+				//徴税
+				if(handCheck(n,0))
+					v = false;
+			}else if(tp_act==4){
+				//暗殺
+				if(handCheck(n,1))
+					v = false;
+			}else if(tp_act==5){
+				//交換
+				if(handCheck(n,3))
+					v = false;
+			}else if(tp_act==6){
+				//強奪
+				if(handCheck(n,4))
+					v = false;
+			}
+			if(v){
+				console.log("doubt成功！");
+			}else{
+				console.log("doubt失敗……");
+			}
+		}else{
+			if(tp_act==1){
+				//援助ブロック
+				if(handCheck(n,4))
+					v = false;
+			}else if(tp_act==4){
+				//暗殺ブロック
+				if(handCheck(n,2))
+					v = false;
+			}else if(tp_act==6){
+				//強奪ブロック
+				if(handCheck(n,3))
+					v = false;
+				if(handCheck(n,4))
+					v = false;
+			}
+			if(v){
+				console.log("block失敗！");
+			}else{
+				console.log("block成功……");
+			}
+		}
+		return v;
+	}
+
+	function randomAI(p){
+		var act=0, m=-1;
+		while(true){
+			var r = Math.floor(Math.random()*7);
+			var t = Math.floor(Math.random()*(player+1));
+			if(r==3 && player_cost[p]>6 && t!=p && handCnt(t)>0)break;
+			if(r==4 && player_cost[p]>2 && t!=p && handCnt(t)>0)break;
+			if(r==6 && t!=p && handCnt(t)>0)break;
+			if(r!=3 && r!=4 && r!=6){
+				t=-1;
+				break;
+			}
+		}
+		return {act:r,target:t};
 	}
 
 	function playAI(p,act){
@@ -847,6 +1018,8 @@
 			//行動選択
 			//return = {act,target};
 			var s = {act:0,target:-1};
+			s = randomAI(p);
+			//console.log(player_cost[p]);
 			if(player_cost[p]>9){
 				for(var i in player_lost1){
 					if(i!=p && (!player_lost1[i] || !player_lost2[i])){
@@ -855,39 +1028,32 @@
 					}
 				}
 			}
-			for(var i in pwait){
-				if(pwait[i]==0){
-					pwait[i]++;
-					ppos[i]=ds[player][p-1];
-					pstr[i]=act_name[s.act];
-					break;
-				}
-			}
+			addPopMes(act_name[s.act],p);
 			return s;
 		}else if(act==1){
 			//ダウトチェック
 			//return = t/f;
-			for(var i in pwait){
-				if(pwait[i]==0){
-					pwait[i]++;
-					ppos[i]=ds[player][p-1];
-					pstr[i]="doubt pass";
-					break;
-				}
+			var v = false;
+			var r = Math.floor(Math.random()*10);
+			if(r<3)v=true;
+			if(v){
+				addPopMes("d o u b t !",p);
+			}else{
+				addPopMes("doubt pass",p);
 			}
-			return false;
+			return v;
 		}else if(act==2){
 			//ブロックチェック
 			//return = t/f;
-			for(var i in pwait){
-				if(pwait[i]==0){
-					pwait[i]++;
-					ppos[i]=ds[player][p-1];
-					pstr[i]="block pass";
-					break;
-				}
+			var v = false;
+			var r = Math.floor(Math.random()*10);
+			if(r<3)v=true;
+			if(v){
+				addPopMes("b l o c k !",p);
+			}else{
+				addPopMes("block pass",p);
 			}
-			return false;
+			return v;
 		}else if(act==3){
 			//捨札選択
 			if(!player_lost1[p]){
@@ -897,6 +1063,7 @@
 			}
 		}else if(act==4){
 			//手札交換
+			return;
 		}
 	}
 
@@ -922,7 +1089,7 @@
 		var rect = e.target.getBoundingClientRect();
 		var x =  Math.round(e.clientX - rect.left);
 		var y =  Math.round(e.clientY - rect.top);
-		console.log("click "+x+" "+y);
+		//console.log("click "+x+" "+y);
 
 		if(hit(x,y,0,0,20,20)){
 			setInitDeck();
@@ -961,13 +1128,64 @@
 						tp_tar = -1;
 						act_choose = i;
 						if(i<3 || i==5){
+							wait[99] = 0;
 							playAction(i,player_turn,-1);
+							addPopMes(act_name[tp_act],7);
 						}else{
 							phase = 6;
 						}
 					}
 				}
 			}		
+		}else if(phase==3 || phase==5){
+			if(hit(x,y,20,400,180,430)){
+				//doubt block
+				nextCheck(next_check_turn);
+				if(cturn[player_turn]){
+					console.log("doubt now me");
+					wait[99] = 0;
+					for(var i in cturn){
+						cturn[i] = false;
+						bturn[i] = false;
+					}
+					cplayer = player_turn;
+					var tar = turn;
+					if(phase==5)
+						tar = bplayer;
+					if(doubtCheck(tar)){
+						discard(tar);
+						tp_act = -1;
+						phase = 2;
+					}else{
+						discard(cplayer);
+						phase = 3;
+					}
+					//phase = 4;
+				}else if(bturn[player_turn]){
+					console.log("block now me");
+					wait[99] = 0;
+					for(var i in bturn){
+						cturn[i] = true;
+						bturn[i] = false;
+					}
+					cturn[player_turn] = false;
+					bplayer = player_turn;
+					phase = 5;
+				}
+			}else if(hit(x,y,20,440,180,470)){
+				//pass
+				console.log("pass now me");
+				nextCheck(next_check_turn);
+				if(cturn[player_turn]){
+					wait[99] = 0;
+					cturn[player_turn] = false;
+					addPopMes("doubt pass",7);
+				}else if(bturn[player_turn]){
+					wait[99] = 0;
+					bturn[player_turn] = false;
+					addPopMes("block pass",7);
+				}
+			}
 		}else if(phase==6){
 			if(on_mouse==10){
 				phase = 1;
@@ -1000,14 +1218,17 @@
 					if(hit(x,y,450,280,590,380))tp_tar = 5;
 				}
 				if(tp_tar!=-1){
+					wait[99] = 0;
 					playAction(tp_act,player_turn,tp_tar);
+					addPopMes(act_name[tp_act],7);
 				}else{
 					act_choose = -1;
 					phase = 2;
 				}
 			}
-		}
+		}else if(phase == 7){
 
+		}
 	}
 
 	function onMove(e){
