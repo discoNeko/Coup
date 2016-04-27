@@ -18,6 +18,7 @@
 	var player_lost1 = [];
 	var player_lost2 = [];
 	var playerAI = [];
+	var message = [];
 	var deck = [];
 	var card_name = ["公爵","刺客","女伯","大使","船長"];
 	var act_name = ["収入","援助","徴税","クー","暗殺","交換","強奪"];
@@ -49,9 +50,10 @@
 	requestId = window.requestAnimationFrame(renderTitle); 
 
 	function init(){
+		//初期化
 		tc();
 		turn = 0;
-		next_check_turn = -1;
+		next_check_turn = 0;
 		player_turn = 0;
 		phase = 0;
 		player = 3;
@@ -63,18 +65,22 @@
 			pwait[i] = 0;
 			ppos[i] = 0;
 			pstr[i] = "";
+			message[i]="";
 		}
 	}
 
 	function reset(){
+		//プレイ画面>>>待機画面に戻るとき実行
 		turn = 0;
 		act_choose　= -1;
 		for(var i = 0; i<100; i++){
 			pwait[i] = 0;
+			message[i]="";
 		}
 	}
 
 	function tc(){
+		//タイトル画面の背景色をランダムで設定
 		var r = (Math.floor(Math.random()*10)).toString(16);
 		var g = (Math.floor(Math.random()*10)).toString(16);
 		var b = (Math.floor(Math.random()*10)).toString(16);
@@ -82,6 +88,7 @@
 	}
 
 	function setInitDeck(){
+		//デッキを初期化
 		for(var i = 0; i<5; i++){
 			deck[i*3] = i;
 			deck[i*3+1] = i;
@@ -106,6 +113,7 @@
 	}
 
 	function setPlayerInfo(){
+		//プレイヤーにカードを配る
 		cturn.length = 0;
 		bturn.length = 0;
 		str_act.length = 0;
@@ -138,6 +146,7 @@
 	}
 
 	function renderTitle(){
+		//タイトル画面の描画
 		var grad  = ctx.createLinearGradient(h,0,0,w);
 		grad.addColorStop(0,'#fff');
 		grad.addColorStop(0.7,title_c);
@@ -215,6 +224,7 @@
 	}
 
 	function renderTitleFade(){
+		//タイトル画面>>>待機画面のフェードアウト
 		var grad  = ctx.createLinearGradient(h,0,0,w);
 		grad.addColorStop(0,'#fff');
 		grad.addColorStop(0.7,title_c);
@@ -293,6 +303,7 @@
 	}
 
 	function renderMain(){
+		//待機画面の描画
 		bg('#4a4');
 		//side bar
 		ctx.fillStyle = '#afa';
@@ -396,6 +407,7 @@
 	}
 
 	function renderPlay(){
+		//プレイ画面の描画
 		bg('#4a4');
 		//side bar
 		ctx.fillStyle = '#afa';
@@ -553,7 +565,7 @@
 				ctx.fillStyle = '#fff';
 				ctx.fillText("doubt",30,420);
 				ctx.fillText("pass",30,460);
-			}else if(bturn[player_turn] || true){
+			}else if(bturn[player_turn]){
 				ctx.fillStyle = '#552';
 				if(next_check_turn==player_turn)ctx.fillStyle = '#aa5';
 				ctx.fillRect(20,400,160,30);
@@ -600,14 +612,27 @@
 		ctx.globalAlpha = 1.0;
 
 		//フレーム毎の処理
-		if(turn==player_turn){
-			calcTurn();
-		}else{
-			calcTurn();
-		}
+		calcTurn();
 		
-		//デバッグ表示
+		//実行ログ
 		if(true){
+			ctx.font= 'bold 12px Meiryo';
+			for(var i = 0; i < 21; i++){
+				if(!message[i]){
+					ctx.fillStyle = '#fff';
+				}else if(message[i].match(/宣言/)){
+					ctx.fillStyle = '#ccc';
+				}else if(message[i].match(/実行/)){
+					ctx.fillStyle = '#faa';
+				}else{
+					ctx.fillStyle = '#fff';
+				}
+				ctx.fillText(message[i],615,25+i*13);
+			}
+		}
+
+		//デバッグ表示
+		if(false){
 			ctx.fillStyle = '#fff';
 			ctx.font= 'bold 18px Meiryo';
 			ctx.lineWidth = 3;
@@ -617,8 +642,8 @@
 			ctx.fillText("phase "+phase,10,40);
 			ctx.strokeText("act "+act_choose,10,60,510);
 			ctx.fillText("act "+act_choose,10,60);
-			ctx.strokeText("pwait[0] "+pwait[0],10,80,510);
-			ctx.fillText("pwait[0] "+pwait[0],10,80);
+			ctx.strokeText("pwait[0] "+wait[0],10,80,510);
+			ctx.fillText("pwait[0] "+wait[0],10,80);
 			ctx.strokeText("next_check_turn "+next_check_turn,10,100,510);
 			ctx.fillText("next_check_turn "+next_check_turn,10,100);
 			ctx.font= 'bold 10px Meiryo';
@@ -638,17 +663,31 @@
 			}
 		}
 
-
 		requestId = window.requestAnimationFrame(renderPlay);
 	}
 
+	function insMes(s){
+		//実行ログの挿入
+		message[0] = s;
+	}
+
+	function addMes(s){
+		//実行ログの追記
+		for(var i = 20; i > 0; i--){
+			message[i] = message[i-1];
+		}
+		message[0] = s;
+	}
+
 	function nextCheck(p){
+		//doubt,block判定をするプレイヤーの順番を次に回す
 		next_check_turn = p;
 		next_check_turn++;
 		next_check_turn %= (player+1);
 	}
 
 	function nextTurn(){
+		//doubt,blockでアクションが実行できなかったとき、次のターンに回す
 		turn++;
 		if(turn>player)turn=0;
 		act_choose　= -1;
@@ -656,59 +695,58 @@
 	}
 
 	function calcTurn(){
+		//フレーム毎の処理
 		wait[99]+=3;
 		if(wait[99]>100){
 			wait[99] = 0;
 			if(phase==2 && turn!=player_turn){
 				if(!player_lost1[turn] || !player_lost2[turn]){
 					var a = playAI(turn,0);
-					console.log("start:[ "+act_name[a.act]+" ] player: "+turn+" -> target: "+a.target);
 					tp_act = a.act;
 					tp_tar = a.target;
 					playAction(tp_act,turn,tp_tar);
 				}else{
+					console.log("skip : player[ "+turn+" ]");
 					wait[99] = 100;
 					turn++;
 					if(turn>player)turn=0;	
 				}
 			}else if(phase==3 || phase==5){
-				if(next_check_turn == -1){
-					calcAction(tp_act,turn,tp_tar);
-					return;
-				}
-				
-				if((cturn[player_turn] || bturn[player_turn]) && next_check_turn==player_turn && player_turn!=turn){
-					//console.log("wait ");
+				if((cturn[player_turn] || bturn[player_turn]) && next_check_turn==player_turn && (player_turn!=turn || (phase==5 && player_turn==turn))){
 					//全チェック済みで自分のチェック番に戻ってきた　ならスルーしてアクション実行
 					//自分のチェック番 かつ　自分のターンでない ならreturnしてクリックまで待つ
 					return;
 				}
 				var j = next_check_turn;
 				nextCheck(next_check_turn);
-
+				
 				//ダウトチェック
 				if(cturn[j]){
-					console.log("doubt now "+j);
 					if(!player_lost1[j] || !player_lost2[j]){
 						if(playAI(j,1)){
+							console.log("%cd o u b t : player[ "+j+" ]", 'font-weight: bold');
 							for(var l in cturn){
 								cturn[l] = false;
 								bturn[l] = false;
 							}
+							next_check_turn = 0;
 							cplayer = j;
 							var tar = turn;
 							if(phase==5)
 								tar = bplayer;
 							if(doubtCheck(tar)){
+								//doubt成功
 								discard(tar);
-								nextTurn();
-								phase = 2;
+								if(phase==3)nextTurn();
+								if(phase==5)calcAction(tp_act,turn,tp_tar);
 							}else{
+								//doubt失敗
 								discard(cplayer);
-								phase = 3;
+								if(phase==3)calcAction(tp_act,turn,tp_tar);
+								if(phase==5)nextTurn();
 							}
-							//phase = 4;
-						}
+							phase = 2;
+						}else{console.log("doubt pass : player[ "+j+" ]");}
 					}else{
 						wait[99] = 100;
 					}
@@ -717,26 +755,29 @@
 				}
 				//全員ダウトパス && ブロック判定
 				if(phase==5){
-
+					next_check_turn = 0;
+					nextTurn();
+					return;
 				}
 				//ブロックチェック
 				for(var i = 0; i < player+1; i++){
 					var k = (i+turn)%(player+1);
 					if(bturn[k]){
 						j = k;
-						next_check_turn = k;
+						nextCheck(j);
 						break;
 					}
 				}
-				if((cturn[player_turn] || bturn[player_turn]) && next_check_turn==player_turn && player_turn!=turn){
+				if((cturn[player_turn] || bturn[player_turn]) && j==player_turn && player_turn!=turn){
 					//全チェック済みで自分のチェック番に戻ってきた　ならスルーしてアクション実行
 					//自分のチェック番 かつ　自分のターンでない ならreturnしてクリックまで待つ
+					nextCheck(j-1);
 					return;
 				}
 				if(bturn[j]){
-					console.log("block now "+j);
 					if(!player_lost1[j] || !player_lost2[j]){
 						if(playAI(j,2)){
+							console.log("%cb l o c k : player[ "+j+" ]", 'font-weight: bold');
 							for(var l in bturn){
 								cturn[l] = true;
 								bturn[l] = false;
@@ -744,7 +785,7 @@
 							cturn[j] = false;
 							bplayer = j;
 							phase = 5;
-						}
+						}else{console.log("block pass : player[ "+j+" ]");}
 					}else{
 						wait[99] = 100;
 					}
@@ -753,20 +794,16 @@
 				}
 				
 				//全員パス済み
-				next_check_turn = -1;
-				if(phase==3){
-					calcAction(tp_act,turn,tp_tar);
-				}
-			}else if(phase==4){
-				//doubt処理済み
-				next_check_turn = -1;
+				console.log("all pass");
+				next_check_turn = 0;
 				calcAction(tp_act,turn,tp_tar);
-				phase = 2;
+				
 			}
 		}
 	}
 
 	function modWait(){
+		//doubt,block,actionのポップアップ
 		for(var i = 0; i<100; i++){
 			if(pwait[i]>0){
 				pwait[i]+=1;
@@ -777,6 +814,7 @@
 	}
 
 	function addPopMes(mes,p){
+		//ポップアップメッセージの追記
 		var pl = ds[player][p-1];
 		if(p==7)pl=7;
 		for(var i in pwait){
@@ -837,12 +875,12 @@
 	}
 
 	function drawPop(pos,str,sec,i){
+		//ポップアップメッセージの描画
 		ctx.font= 'bold 20px Meiryo';
 		ctx.strokeStyle = '#333';
 		ctx.lineWidth = 6;
 		ctx.lineJoin = 'round';
 		ctx.fillStyle = '#fff';
-		//if(sec<20)console.log(pos);
 		var p = drawPos(pos);
 		var x = p.x,　y = p.y;
 		x += i*2;
@@ -856,23 +894,32 @@
 	}
 
 	function discard(p){
+		//手札を捨てる処理
+		//TODO:現在、捨てる手札を選択できない
 		if(p!=player_turn){
+			//AIの処理
 			playAI(p,3);
 		}else{
-			phase = 7;
+			//playerの処理
 			playAI(player_turn,3);
 		}
 	}
 
 	function exchange(p){
+		//手札を交換する処理
+		//TODO:未実装
 		if(p!=player_turn){
+			//AIの処理
 			playAI(p,4);
 		}else{
-			phase = 8;
+			//playerの処理
 		}
 	}
 
 	function playAction(n,p,t){
+		//actionの宣言
+		addMes("[宣言]"+p+" : [ "+act_name[n]+" ] -> 対象: "+t);
+		console.log("%cstart : [ "+act_name[n]+" ] player: "+p+" -> target: "+t, 'color: green');
 		var c = false;
 		if(n==2 || n==4 || n==5 || n==6){
 			c = true;
@@ -886,6 +933,7 @@
 				bturn[i]=true;
 			bturn[p] = false;
 		}else if(n==4 || n==6){
+			if(n==4)player_cost[p]-=3;
 			c = true;
 			bturn[t]=true;
 		}
@@ -894,7 +942,9 @@
 	}
 
 	function calcAction(n,p,t){
-		console.log("action:[ "+act_name[n]+" ] player: "+p+" -> target: "+t);
+		//actionの実行処理
+		insMes("[実行]"+p+" : [ "+act_name[n]+" ] -> 対象: "+t);
+		console.log("%caction : [ "+act_name[n]+" ] player: "+p+" -> target: "+t, 'color: red');
 		if(n==0){
 			//収入
 			player_cost[p]++;
@@ -910,7 +960,6 @@
 			discard(t);
 		}else if(n==4){
 			//暗殺
-			player_cost[p]-=3;
 			discard(t);
 		}else if(n==5){
 			//交換
@@ -932,6 +981,7 @@
 	}
 
 	function handCheck(n,c){
+		//n 番目のプレイヤーの手札にカード c が存在するかチェック
 		var v = false;
 		if(!player_lost1[n] && player_hand1[n]==c)
 			v = true;
@@ -940,14 +990,16 @@
 		return v;
 	}
 
-	function handCnt(p){
+	function handCnt(n){
+		//n 番目のプレイヤーの手札枚数を数える
 		var cnt = 0;
-		if(!player_lost1[p])cnt++;
-		if(!player_lost2[p])cnt++;
+		if(!player_lost1[n])cnt++;
+		if(!player_lost2[n])cnt++;
 		return cnt;
 	}
 
 	function doubtCheck(n){
+		//doubtの成功/失敗を判定する
 		var v = true;
 		if(phase==3){
 			if(tp_act==2){
@@ -968,9 +1020,9 @@
 					v = false;
 			}
 			if(v){
-				console.log("doubt成功！");
+				console.log("%cdoubt成功！ > player[ "+turn+" ] discard.", 'color: red; font-weight: bold');
 			}else{
-				console.log("doubt失敗……");
+				console.log("%cdoubt失敗…… > player[ "+cplayer+" ] discard.", 'color: red; font-weight: bold');
 			}
 		}else{
 			if(tp_act==1){
@@ -989,15 +1041,16 @@
 					v = false;
 			}
 			if(v){
-				console.log("block失敗！");
+				console.log("%cblock失敗！ > player[ "+bplayer+" ] discard.", 'color: red; font-weight: bold');
 			}else{
-				console.log("block成功……");
+				console.log("%cblock成功…… > player[ "+cplayer+" ] discard.", 'color: red; font-weight: bold');
 			}
 		}
 		return v;
 	}
 
 	function randomAI(p){
+		//AIがランダムでactionを決定する
 		var act=0, m=-1;
 		while(true){
 			var r = Math.floor(Math.random()*7);
@@ -1016,10 +1069,8 @@
 	function playAI(p,act){
 		if(act==0){
 			//行動選択
-			//return = {act,target};
 			var s = {act:0,target:-1};
 			s = randomAI(p);
-			//console.log(player_cost[p]);
 			if(player_cost[p]>9){
 				for(var i in player_lost1){
 					if(i!=p && (!player_lost1[i] || !player_lost2[i])){
@@ -1032,7 +1083,6 @@
 			return s;
 		}else if(act==1){
 			//ダウトチェック
-			//return = t/f;
 			var v = false;
 			var r = Math.floor(Math.random()*10);
 			if(r<3)v=true;
@@ -1044,7 +1094,6 @@
 			return v;
 		}else if(act==2){
 			//ブロックチェック
-			//return = t/f;
 			var v = false;
 			var r = Math.floor(Math.random()*10);
 			if(r<3)v=true;
@@ -1079,6 +1128,7 @@
 	}
 
 	function hit(x,y,sx,sy,ex,ey){
+		//クリックした場所がある範囲に収まっているか
 		var v = false;
 		if(sx<x && x<ex && sy<y && y<ey)
 			v = true;
@@ -1086,6 +1136,7 @@
 	}
 
 	function onClick(e){
+		//クリックしたときの処理
 		var rect = e.target.getBoundingClientRect();
 		var x =  Math.round(e.clientX - rect.left);
 		var y =  Math.round(e.clientY - rect.top);
@@ -1118,6 +1169,7 @@
 			if(on_mouse==10){
 				phase = 1;
 				reset();
+				wait[0] = -100;
 				window.cancelAnimationFrame(requestId);
 				requestId = window.requestAnimationFrame(renderMain); 
 			}
@@ -1140,29 +1192,32 @@
 		}else if(phase==3 || phase==5){
 			if(hit(x,y,20,400,180,430)){
 				//doubt block
-				nextCheck(next_check_turn);
 				if(cturn[player_turn]){
-					console.log("doubt now me");
+					nextCheck(next_check_turn);
+					console.log("d o u b t : player[ "+player_turn+" ]");
 					wait[99] = 0;
 					for(var i in cturn){
 						cturn[i] = false;
 						bturn[i] = false;
 					}
+					next_check_turn = 0;
 					cplayer = player_turn;
 					var tar = turn;
 					if(phase==5)
 						tar = bplayer;
 					if(doubtCheck(tar)){
 						discard(tar);
-						tp_act = -1;
-						phase = 2;
+						if(phase==3)nextTurn();
+						if(phase==5)calcAction(tp_act,turn,tp_tar);
 					}else{
 						discard(cplayer);
-						phase = 3;
+						if(phase==3)calcAction(tp_act,turn,tp_tar);
+						if(phase==5)nextTurn();
 					}
-					//phase = 4;
+					phase = 2;
 				}else if(bturn[player_turn]){
-					console.log("block now me");
+					nextCheck(next_check_turn);
+					console.log("b l o c k : player[ "+player_turn+" ]");
 					wait[99] = 0;
 					for(var i in bturn){
 						cturn[i] = true;
@@ -1174,16 +1229,17 @@
 				}
 			}else if(hit(x,y,20,440,180,470)){
 				//pass
-				console.log("pass now me");
 				nextCheck(next_check_turn);
 				if(cturn[player_turn]){
 					wait[99] = 0;
 					cturn[player_turn] = false;
 					addPopMes("doubt pass",7);
+					console.log("doubt pass : player[ "+player_turn+" ]");
 				}else if(bturn[player_turn]){
 					wait[99] = 0;
 					bturn[player_turn] = false;
 					addPopMes("block pass",7);
+					console.log("block pass : player[ "+player_turn+" ]");
 				}
 			}
 		}else if(phase==6){
@@ -1232,6 +1288,7 @@
 	}
 
 	function onMove(e){
+		//カーソルを動かしたときの処理
 		var rect = e.target.getBoundingClientRect();
 		var x =  Math.round(e.clientX - rect.left);
 		var y =  Math.round(e.clientY - rect.top);
