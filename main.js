@@ -1027,7 +1027,7 @@
 		}else{
 			if(tp_act==1){
 				//援助ブロック
-				if(handCheck(n,4))
+				if(handCheck(n,0))
 					v = false;
 			}else if(tp_act==4){
 				//暗殺ブロック
